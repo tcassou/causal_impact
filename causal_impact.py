@@ -17,7 +17,15 @@ class CausalImpact:
     """
 
     def __init__(self, data, inter_date, model_args=None):
-        """
+        """Main constructor.
+
+        :param pandas.DataFrame data: input data. Must contain at least 2 columns, one being named 'y'.
+            See the README for more details.
+        :param object inter_date: date of intervention. Must be of same type of the data index elements.
+            This should usually be int of datetime.date
+        :param {str: object} model_args: parameters of the model
+            > n_samples: number of samples in the MCMC sampling
+
         """
         self.data = data
         self.inter_date = inter_date
@@ -26,7 +34,7 @@ class CausalImpact:
         self.model_args = self._check_model_args(model_args)
 
     def run(self):
-        """
+        """Fit the BSTS model to the data.
         """
         self.model = BSTS()
         self.model.fit(
@@ -34,10 +42,12 @@ class CausalImpact:
             self.data.loc[:self.inter_date - self.t_step, self._obs_col()],
             n_samples=self.model_args['n_samples'],
         )
-        return self.model
 
     def _check_model_args(self, model_args):
-        """
+        """Check input arguments, and add missing ones if needed.
+
+        :return: the valid dict of arguments
+        :rtype: {str: object}
         """
         if model_args is None:
             model_args = {}
@@ -49,7 +59,10 @@ class CausalImpact:
         return model_args
 
     def _obs_col(self):
-        """
+        """Get name of column to be modeled in input data.
+
+        :return: column name
+        :rtype: str
         """
         return 'y'
 
@@ -59,16 +72,20 @@ class CausalImpact:
         return self.data.columns.difference([self._obs_col()])
 
     def plot(self):
+        """Produce final impact plots.
         """
-        """
+        # Data model before date of intervention - allows to evaluate quality of fit
         pre_model = self.model.posterior_model(self.data.loc[:self.inter_date - self.t_step, self._reg_cols()])
         pre_var = self.model.trace['sigma_eps'].mean()
+        # Best prediction of y without any intervention
         post_pred = self.model.predict(self.data.loc[self.inter_date:, self._reg_cols()], noise=False)
+        # Set of likely trajectories for y without any intervention
         trajectories = self.model.predict_trajectories(
             self.data.loc[self.inter_date:, self._reg_cols()], self.model_args['n_samples'])
         std_traj = np.std(trajectories, axis=0)
 
         plt.figure(figsize=(15, 12))
+
         # Observation and regression components
         ax1 = plt.subplot(3, 1, 1)
         for col in self._reg_cols():
@@ -91,6 +108,7 @@ class CausalImpact:
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
         plt.legend(loc='upper left')
         plt.title('Observation vs prediction')
+
         # Pointwise difference
         ax2 = plt.subplot(312, sharex=ax1)
         plt.plot(self.data[self._obs_col()] - pd.concat([pre_model, post_pred]), 'r--', linewidth=2)
@@ -111,6 +129,7 @@ class CausalImpact:
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
         plt.setp(ax2.get_xticklabels(), visible=False)
         plt.title('Difference')
+
         # Cumulative impact
         ax3 = plt.subplot(313, sharex=ax1)
         plt.plot(

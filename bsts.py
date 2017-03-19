@@ -27,13 +27,19 @@ class BSTS:
     """
 
     def __init__(self):
-        """
+        """Instantiation.
         """
         self.model = None
         self.trace = None
 
     def fit(self, features, observed, n_samples):
-        """
+        """Fit model to data.
+
+        :param pandas.DataFrame features: time series to use as control set
+        :param pandas.Series observed: time series to be modeled
+        :param int n_samples: number of samples in MCMC
+
+        :return: None
         """
         with Model() as self.model:
             # Variance of y
@@ -57,14 +63,25 @@ class BSTS:
             )
 
     def posterior_model(self, features):
-        """
+        """Data model, prior to intervention date. Shows how good the fit is.
+
+        :param pandas.DataFrame features: time series to use as control set
+
+        :return: fitted time series
+        :rtype: numpy.ndarray
         """
         return self.trace['trend'].mean(axis=0) +\
             self.trace['alpha'].mean(axis=0) +\
             (self.trace['beta'].mean(axis=0) * features).sum(axis=1)
 
     def predict(self, features, noise=True):
-        """
+        """Produce a prediction of input time series in the hypothesis of no intervention.
+
+        :param pandas.DataFrame features: time series to use as control set
+        :param bool noise: True to produce a likely time series, False to produce the expected time series
+
+        :return: predicted time series
+        :rtype: numpy.ndarray
         """
         alpha = self.trace['alpha'].mean(axis=0)
         beta = self.trace['beta'].mean(axis=0)
@@ -89,6 +106,12 @@ class BSTS:
         return np.array(trend) + alpha + (beta * features).sum(axis=1) + eps
 
     def predict_trajectories(self, features, n_samples):
-        """
+        """Produce a set of likely trajectories for the input signal in the hypothesis of no intervention.
+
+        :param pandas.DataFrame features: time series to use as control set
+        :param int n_samples: number of trajectories to compute
+
+        :return: the set of trajectories
+        :rtype: numpy.ndarray
         """
         return np.array([self.predict(features) for _ in range(n_samples)])
