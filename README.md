@@ -43,7 +43,7 @@ ci.plot()
 ```
 
 After fitting the model, and estimating what the `y` time series would have been without any intervention, this will typically produce the following plots:
-![Impact Plot](https://github.com/tcassou/causal_impact/blob/master/example/causal_impact.png)
+![Impact Plot](https://github.com/tcassou/causal_impact/blob/master/examples/causal_impact.png)
 
 ## Further resources
 
