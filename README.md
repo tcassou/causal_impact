@@ -1,5 +1,7 @@
 # Python Causal Impact
 
+[![Build Status](https://travis-ci.org/tcassou/causal_impact.svg?branch=master)](https://travis-ci.org/tcassou/causal_impact)
+
 **Work In Progress**
 
 Causal inference using Bayesian structural time-series models.
