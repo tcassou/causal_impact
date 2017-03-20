@@ -7,7 +7,13 @@ python:
 
 install:
   - pip -qqq install --upgrade pip setuptools
+  - pip install --user pre-commit
   - pip -qqq install -r requirements.txt
+
+cache:
+  apt: false
+  directories:
+    - /home/travis/virtualenv/python2.7_with_system_site_packages/lib/python2.7
 
 env:
   global:

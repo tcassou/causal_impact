@@ -16,6 +16,11 @@
         args:
         - --rcfile=./.pylintrc
         - -rn
+-   repo: git://github.com/tcassou/python-pre-commit-hooks
+    sha: 4630aaacfd6c31fd15b86ad196f3f5eaa69e0a51
+    hooks:
+    -   id: do_not_commit
+    -   id: remove_ipython_notebook_outputs
 -   repo: https://github.com/asottile/reorder_python_imports.git
     sha: v0.3.1
     hooks:
