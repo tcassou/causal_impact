@@ -1,0 +1,23 @@
+-   repo: git://github.com/pre-commit/pre-commit-hooks
+    sha: v0.7.1
+    hooks:
+    -   id: trailing-whitespace
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: debug-statements
+    -   id: flake8
+    -   id: check-added-large-files
+    -   id: double-quote-string-fixer
+        'language_version:': 2.7.5
+-   repo: git://github.com/pre-commit/mirrors-pylint
+    sha: v1.6.4.post1
+    hooks:
+    -   id: pylint
+        args:
+        - --rcfile=./.pylintrc
+        - -rn
+-   repo: https://github.com/asottile/reorder_python_imports.git
+    sha: v0.3.1
+    hooks:
+    -   id: reorder-python-imports
+        language_version: python2.7

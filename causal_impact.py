@@ -67,7 +67,10 @@ class CausalImpact:
         return 'y'
 
     def _reg_cols(self):
-        """
+        """Get names of columns used in the regression component of the model.
+
+        :return: the column names
+        :rtype: pandas.indexes.base.Index
         """
         return self.data.columns.difference([self._obs_col()])
 
@@ -131,7 +134,7 @@ class CausalImpact:
         plt.title('Difference')
 
         # Cumulative impact
-        ax3 = plt.subplot(313, sharex=ax1)
+        plt.subplot(313, sharex=ax1)
         plt.plot(
             self.data.loc[self.inter_date:].index,
             (self.data.loc[self.inter_date:, self._obs_col()] - post_pred).cumsum(),

@@ -2,14 +2,11 @@
 from __future__ import unicode_literals
 
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-
-from pymc3 import Model
-from pymc3 import sample
 from pymc3 import GaussianRandomWalk
 from pymc3 import HalfNormal
+from pymc3 import Model
 from pymc3 import Normal
+from pymc3 import sample
 
 
 class BSTS:
