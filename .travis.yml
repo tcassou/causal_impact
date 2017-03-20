@@ -1,0 +1,32 @@
+language: python
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+    - python-dev
+    - python-pip
+
+python:
+  - "2.7_with_system_site_packages"
+
+install:
+  - git clone https://pricematch-travis:MgM2bc97XhpdijvL7bL9Z18f@github.com/pricematch/devtools.git ../devtools
+  - time travis_wait 30 pip -qqq install -r requirements.txt
+
+cache:
+  apt: false
+  directories:
+    - /home/travis/virtualenv/python2.7_with_system_site_packages/lib/python2.7
+
+env:
+  global:
+    - PYTHON_ENV=test
+  matrix:
+    - COMMAND="pre-commit run --all-files"
+
+script: $COMMAND
+
+notifications:
+  email: false
