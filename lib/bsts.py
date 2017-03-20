@@ -51,7 +51,7 @@ class BSTS:
             delta = GaussianRandomWalk('delta', sigma_v ** -2, shape=observed.shape[0] - 1)
             trend = GaussianRandomWalk('trend', sigma_u ** -2, mu=delta, shape=observed.shape[0])
             # Observation
-            y = Normal('y', mu=trend + reg, sd=sigma_eps, observed=observed)
+            Normal('y', mu=trend + reg, sd=sigma_eps, observed=observed)
 
         with self.model:
             self.trace = sample(
