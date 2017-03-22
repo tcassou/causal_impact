@@ -2,12 +2,11 @@ from __future__ import print_function
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-
-from lib.bsts import BSTS
+from statsmodels.tsa.statespace.structural import UnobservedComponents
 
 DEFAULT_ARGS = {
     'n_samples': 1000,
+    'n_seasons': 7,
 }
 
 
@@ -29,18 +28,21 @@ class CausalImpact:
         """
         self.data = data
         self.inter_date = inter_date
-        self.t_step = data.index[1] - data.index[0]
         self.model = None
+        self.fit = None
         self.model_args = self._check_model_args(model_args)
 
     def run(self):
         """Fit the BSTS model to the data.
         """
-        self.model = BSTS()
-        self.model.fit(
-            self.data.loc[:self.inter_date - self.t_step, self._reg_cols()],
-            self.data.loc[:self.inter_date - self.t_step, self._obs_col()],
-            n_samples=self.model_args['n_samples'],
+        self.model = UnobservedComponents(
+            self.data.loc[:self.inter_date - 1, self._obs_col()].values,
+            exog=self.data.loc[:self.inter_date - 1, self._reg_cols()].values,
+            level='local linear trend',
+            seasonal=self.model_args['n_seasons'],
+        )
+        self.fit = self.model.fit(
+            maxiter=self.model_args['n_samples'],
         )
 
     def _check_model_args(self, model_args):
@@ -74,18 +76,32 @@ class CausalImpact:
         """
         return self.data.columns.difference([self._obs_col()])
 
+    def plot_components(self):
+        """Plot the estimated components of the model.
+        """
+        self.fit.plot_components(figsize=(15, 9), legend_loc='lower right')
+        plt.show()
+
     def plot(self):
         """Produce final impact plots.
         """
+        min_t = 2 if self.model_args['n_seasons'] is None else self.model_args['n_seasons'] + 1
         # Data model before date of intervention - allows to evaluate quality of fit
-        pre_model = self.model.posterior_model(self.data.loc[:self.inter_date - self.t_step, self._reg_cols()])
-        pre_var = self.model.trace['sigma_eps'].mean()
+        pred = self.fit.get_prediction()
+        pre_model = pred.predicted_mean
+        pre_lower = pred.conf_int()['lower y'].values
+        pre_upper = pred.conf_int()['upper y'].values
+        pre_model[:min_t] = np.nan
+        pre_lower[:min_t] = np.nan
+        pre_upper[:min_t] = np.nan
         # Best prediction of y without any intervention
-        post_pred = self.model.predict(self.data.loc[self.inter_date:, self._reg_cols()], noise=False)
-        # Set of likely trajectories for y without any intervention
-        trajectories = self.model.predict_trajectories(
-            self.data.loc[self.inter_date:, self._reg_cols()], self.model_args['n_samples'])
-        std_traj = np.std(trajectories, axis=0)
+        post_pred = self.fit.get_forecast(
+            steps=self.data.shape[0] - self.inter_date,
+            exog=self.data.loc[self.inter_date:, self._reg_cols()]
+        )
+        post_model = post_pred.predicted_mean
+        post_lower = post_pred.conf_int()['lower y'].values
+        post_upper = post_pred.conf_int()['upper y'].values
 
         plt.figure(figsize=(15, 12))
 
@@ -93,19 +109,19 @@ class CausalImpact:
         ax1 = plt.subplot(3, 1, 1)
         for col in self._reg_cols():
             plt.plot(self.data[col], label=col)
-        plt.plot(pd.concat([pre_model, post_pred]), 'r--', linewidth=2, label='model')
+        plt.plot(np.concatenate([pre_model, post_model]), 'r--', linewidth=2, label='model')
         plt.plot(self.data[self._obs_col()], 'k', linewidth=2, label=self._obs_col())
         plt.axvline(self.inter_date, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[:self.inter_date - self.t_step].index,
-            pre_model - 2 * pre_var,
-            pre_model + 2 * pre_var,
+            self.data.loc[:self.inter_date - 1].index,
+            pre_lower,
+            pre_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.fill_between(
             self.data.loc[self.inter_date:].index,
-            post_pred - 1 * std_traj,
-            post_pred + 1 * std_traj,
+            post_lower,
+            post_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
@@ -114,19 +130,19 @@ class CausalImpact:
 
         # Pointwise difference
         ax2 = plt.subplot(312, sharex=ax1)
-        plt.plot(self.data[self._obs_col()] - pd.concat([pre_model, post_pred]), 'r--', linewidth=2)
+        plt.plot(self.data[self._obs_col()] - np.concatenate([pre_model, post_model]), 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.inter_date, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[:self.inter_date - self.t_step].index,
-            self.data.loc[:self.inter_date - self.t_step, self._obs_col()] - pre_model - 2 * pre_var,
-            self.data.loc[:self.inter_date - self.t_step, self._obs_col()] - pre_model + 2 * pre_var,
+            self.data.loc[:self.inter_date - 1].index,
+            self.data.loc[:self.inter_date - 1, self._obs_col()] - pre_lower,
+            self.data.loc[:self.inter_date - 1, self._obs_col()] - pre_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.fill_between(
             self.data.loc[self.inter_date:].index,
-            self.data.loc[self.inter_date:, self._obs_col()] - post_pred - 1 * std_traj,
-            self.data.loc[self.inter_date:, self._obs_col()] - post_pred + 1 * std_traj,
+            self.data.loc[self.inter_date:, self._obs_col()] - post_lower,
+            self.data.loc[self.inter_date:, self._obs_col()] - post_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
@@ -137,15 +153,15 @@ class CausalImpact:
         plt.subplot(313, sharex=ax1)
         plt.plot(
             self.data.loc[self.inter_date:].index,
-            (self.data.loc[self.inter_date:, self._obs_col()] - post_pred).cumsum(),
+            (self.data.loc[self.inter_date:, self._obs_col()] - post_model).cumsum(),
             'r--', linewidth=2,
         )
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.inter_date, c='k', linestyle='--')
         plt.fill_between(
             self.data.loc[self.inter_date:].index,
-            (self.data.loc[self.inter_date:, self._obs_col()] - post_pred - 1 * std_traj).cumsum(),
-            (self.data.loc[self.inter_date:, self._obs_col()] - post_pred + 1 * std_traj).cumsum(),
+            (self.data.loc[self.inter_date:, self._obs_col()] - post_lower).cumsum(),
+            (self.data.loc[self.inter_date:, self._obs_col()] - post_upper).cumsum(),
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
@@ -153,3 +169,5 @@ class CausalImpact:
         plt.title('Cumulative Impact')
         plt.xlabel('$T$')
         plt.show()
+
+        print('Note: the first {} observations are not shown, due to approximate diffuse initialization'.format(min_t))
