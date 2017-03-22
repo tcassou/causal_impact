@@ -54,4 +54,4 @@ After fitting the model, and estimating what the `y` time series would have been
 * Discussion forum: http://stats.stackexchange.com/
 
 ## Issues and improvements
-As mentioned above, this package is still being developed. Feel free to contribute through githib by sending pull requests or reporting issues.
+As mentioned above, this package is still being developed. Feel free to contribute through github by sending pull requests or reporting issues.
