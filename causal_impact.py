@@ -26,24 +26,43 @@ class CausalImpact:
             > n_samples: number of samples in the MCMC sampling
 
         """
-        self.data = data
-        self.inter_date = inter_date
-        self.model = None
-        self.fit = None
-        self.model_args = self._check_model_args(model_args)
+        self.data = None            # Input data, with a reset index
+        self.data_index = None      # Data initial index
+        self.data_inter = None      # Data intervention date, relative to the reset index
+        self.model = None           # statsmodels BSTS model
+        self.fit = None             # statsmodels BSTS fitted model
+        self.model_args = None      # BSTS model arguments
+        # Checking input arguments
+        self._check_input(data, inter_date)
+        self._check_model_args(model_args)
 
     def run(self):
         """Fit the BSTS model to the data.
         """
         self.model = UnobservedComponents(
-            self.data.loc[:self.inter_date - 1, self._obs_col()].values,
-            exog=self.data.loc[:self.inter_date - 1, self._reg_cols()].values,
+            self.data.loc[:self.data_inter - 1, self._obs_col()].values,
+            exog=self.data.loc[:self.data_inter - 1, self._reg_cols()].values,
             level='local linear trend',
             seasonal=self.model_args['n_seasons'],
         )
         self.fit = self.model.fit(
             maxiter=self.model_args['n_samples'],
         )
+
+    def _check_input(self, data, inter_date):
+        """Check input data.
+
+        :param pandas.DataFrame data: input data. Must contain at least 2 columns, one being named 'y'.
+            See the README for more details.
+        :param object inter_date: date of intervention. Must be of same type of the data index elements.
+            This should usually be int of datetime.date
+        """
+        self.data_index = data.index
+        self.data = data.reset_index(drop=True)
+        try:
+            self.data_inter = self.data_index.tolist().index(inter_date)
+        except ValueError:
+            raise ValueError('Input intervention date could not be found in data index.')
 
     def _check_model_args(self, model_args):
         """Check input arguments, and add missing ones if needed.
@@ -58,7 +77,7 @@ class CausalImpact:
             if key not in model_args:
                 model_args[key] = val
 
-        return model_args
+        self.model_args = model_args
 
     def _obs_col(self):
         """Get name of column to be modeled in input data.
@@ -96,8 +115,8 @@ class CausalImpact:
         pre_upper[:min_t] = np.nan
         # Best prediction of y without any intervention
         post_pred = self.fit.get_forecast(
-            steps=self.data.shape[0] - self.inter_date,
-            exog=self.data.loc[self.inter_date:, self._reg_cols()]
+            steps=self.data.shape[0] - self.data_inter,
+            exog=self.data.loc[self.data_inter:, self._reg_cols()]
         )
         post_model = post_pred.predicted_mean
         post_lower = post_pred.conf_int()['lower y'].values
@@ -111,20 +130,20 @@ class CausalImpact:
             plt.plot(self.data[col], label=col)
         plt.plot(np.concatenate([pre_model, post_model]), 'r--', linewidth=2, label='model')
         plt.plot(self.data[self._obs_col()], 'k', linewidth=2, label=self._obs_col())
-        plt.axvline(self.inter_date, c='k', linestyle='--')
+        plt.axvline(self.data_inter, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[:self.inter_date - 1].index,
+            self.data.loc[:self.data_inter - 1].index,
             pre_lower,
             pre_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.fill_between(
-            self.data.loc[self.inter_date:].index,
+            self.data.loc[self.data_inter:].index,
             post_lower,
             post_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
-        plt.axis([self.data.index[0], self.data.index[-1], None, None])
+        plt.setp(ax1.get_xticklabels(), visible=False)
         plt.legend(loc='upper left')
         plt.title('Observation vs prediction')
 
@@ -132,40 +151,39 @@ class CausalImpact:
         ax2 = plt.subplot(312, sharex=ax1)
         plt.plot(self.data[self._obs_col()] - np.concatenate([pre_model, post_model]), 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
-        plt.axvline(self.inter_date, c='k', linestyle='--')
+        plt.axvline(self.data_inter, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[:self.inter_date - 1].index,
-            self.data.loc[:self.inter_date - 1, self._obs_col()] - pre_lower,
-            self.data.loc[:self.inter_date - 1, self._obs_col()] - pre_upper,
+            self.data.loc[:self.data_inter - 1].index,
+            self.data.loc[:self.data_inter - 1, self._obs_col()] - pre_lower,
+            self.data.loc[:self.data_inter - 1, self._obs_col()] - pre_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.fill_between(
-            self.data.loc[self.inter_date:].index,
-            self.data.loc[self.inter_date:, self._obs_col()] - post_lower,
-            self.data.loc[self.inter_date:, self._obs_col()] - post_upper,
+            self.data.loc[self.data_inter:].index,
+            self.data.loc[self.data_inter:, self._obs_col()] - post_lower,
+            self.data.loc[self.data_inter:, self._obs_col()] - post_upper,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
-        plt.axis([self.data.index[0], self.data.index[-1], None, None])
         plt.setp(ax2.get_xticklabels(), visible=False)
         plt.title('Difference')
 
         # Cumulative impact
-        plt.subplot(313, sharex=ax1)
+        ax3 = plt.subplot(313, sharex=ax1)
         plt.plot(
-            self.data.loc[self.inter_date:].index,
-            (self.data.loc[self.inter_date:, self._obs_col()] - post_model).cumsum(),
+            self.data.loc[self.data_inter:].index,
+            (self.data.loc[self.data_inter:, self._obs_col()] - post_model).cumsum(),
             'r--', linewidth=2,
         )
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
-        plt.axvline(self.inter_date, c='k', linestyle='--')
+        plt.axvline(self.data_inter, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[self.inter_date:].index,
-            (self.data.loc[self.inter_date:, self._obs_col()] - post_lower).cumsum(),
-            (self.data.loc[self.inter_date:, self._obs_col()] - post_upper).cumsum(),
+            self.data.loc[self.data_inter:].index,
+            (self.data.loc[self.data_inter:, self._obs_col()] - post_lower).cumsum(),
+            (self.data.loc[self.data_inter:, self._obs_col()] - post_upper).cumsum(),
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
-        plt.setp(ax2.get_xticklabels(), visible=False)
+        ax3.set_xticklabels(self.data_index)
         plt.title('Cumulative Impact')
         plt.xlabel('$T$')
         plt.show()
