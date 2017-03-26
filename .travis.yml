@@ -7,7 +7,7 @@ python:
 
 install:
   - pip -qqq install --upgrade pip setuptools
-  - pip install --user pre-commit
+  - pip install --user pre-commit==0.13.3
   - pip -qqq install -r requirements.txt
 
 cache:
