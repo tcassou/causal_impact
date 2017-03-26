@@ -5,7 +5,7 @@ import numpy as np
 from statsmodels.tsa.statespace.structural import UnobservedComponents
 
 DEFAULT_ARGS = {
-    'n_samples': 1000,
+    'max_iter': 1000,
     'n_seasons': 7,
 }
 
@@ -23,7 +23,8 @@ class CausalImpact:
         :param object inter_date: date of intervention. Must be of same type of the data index elements.
             This should usually be int of datetime.date
         :param {str: object} model_args: parameters of the model
-            > n_samples: number of samples in the MCMC sampling
+            > max_iter: number of samples in the MCMC sampling
+            > n_seasons: number of seasons in the seasonal component of the BSTS model
 
         """
         self.data = None            # Input data, with a reset index
@@ -46,7 +47,7 @@ class CausalImpact:
             seasonal=self.model_args['n_seasons'],
         )
         self.fit = self.model.fit(
-            maxiter=self.model_args['n_samples'],
+            maxiter=self.model_args['max_iter'],
         )
 
     def _check_input(self, data, inter_date):
