@@ -74,7 +74,7 @@ class CausalImpact:
         if model_args is None:
             model_args = {}
 
-        for key, val in DEFAULT_ARGS.iteritems():
+        for key, val in DEFAULT_ARGS.items():
             if key not in model_args:
                 model_args[key] = val
 
