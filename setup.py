@@ -3,15 +3,15 @@ from distutils.core import setup
 
 
 setup(
-    name = 'causal_impact',
-    packages = ['causal_impact'],
-    version = '1.0.0',
-    description = 'Python package for causal inference using Bayesian structural time-series models.',
-    url = 'https://github.com/tcassou/causal_impact',
-    download_url = 'https://github.com/tcassou/causal_impact/archive/1.0.0.tar.gz',
-    keywords = ['bayesian', 'structural', 'time-series', 'causal', 'impact', 'python', 'inference'],
+    name='causal_impact',
+    packages=['causal_impact'],
+    version='1.0.0',
+    description='Python package for causal inference using Bayesian structural time-series models.',
+    url='https://github.com/tcassou/causal_impact',
+    download_url='https://github.com/tcassou/causal_impact/archive/1.0.0.tar.gz',
+    keywords=['bayesian', 'structural', 'time-series', 'causal', 'impact', 'python', 'inference'],
     license='MIT',
-    classifiers = [
+    classifiers=[
         'Programming Language :: Python',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
