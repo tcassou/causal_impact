@@ -12,11 +12,9 @@ Please refer to [the package](https://github.com/google/CausalImpact) itself, [i
 
 Preferably use a virtual environment:
 ```
-git clone git@github.com:tcassou/causal_impact
-cd causal_impact
 virtualenv .venv
 . .venv/bin/activate
-pip install -r requirements.txt
+pip install causal-impact
 ```
 
 ## Example
