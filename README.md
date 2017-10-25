@@ -10,10 +10,8 @@ Please refer to [the package](https://github.com/google/CausalImpact) itself, [i
 
 ## Setup
 
-Preferably use a virtual environment:
+Simply install from `pip`:
 ```
-virtualenv .venv
-. .venv/bin/activate
 pip install causal-impact
 ```
 
