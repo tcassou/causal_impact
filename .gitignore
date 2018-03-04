@@ -8,11 +8,13 @@
 *.pyc
 *.ipynb
 *.csv
+*.ipynb
 
 # Ignore ipython notebook checkpoints
 .ipynb_checkpoints
 # Virtual env
 .venv/
+.venv3/
 dist/
 
 *~
