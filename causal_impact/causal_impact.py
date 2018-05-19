@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-from __future__ import unicode_literals
+# from __future__ import unicode_literals
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,7 +39,7 @@ class CausalImpact:
         self.model_args = None      # BSTS model arguments
         # Checking input arguments
         self._check_input(data, inter_date)
-        self._check_model_args(model_args)
+        self._check_model_args(data, model_args)
 
     def run(self):
         """Fit the BSTS model to the data.
@@ -69,7 +69,7 @@ class CausalImpact:
         except ValueError:
             raise ValueError('Input intervention date could not be found in data index.')
 
-    def _check_model_args(self, model_args):
+    def _check_model_args(self, data, model_args):
         """Check input arguments, and add missing ones if needed.
 
         :return: the valid dict of arguments
@@ -81,6 +81,9 @@ class CausalImpact:
         for key, val in DEFAULT_ARGS.items():
             if key not in model_args:
                 model_args[key] = val
+
+        if self.data_inter < model_args['n_seasons']:
+            raise ValueError('Training data contains samples than number of seasons in BSTS model.')
 
         self.model_args = model_args
 
@@ -113,8 +116,8 @@ class CausalImpact:
         # Data model before date of intervention - allows to evaluate quality of fit
         pred = self.fit.get_prediction()
         pre_model = pred.predicted_mean
-        pre_lower = pred.conf_int()['lower y'].values
-        pre_upper = pred.conf_int()['upper y'].values
+        pre_lower = pred.conf_int()[:, 0]       # As of 0.9.0, statsmodels returns a numpy array here
+        pre_upper = pred.conf_int()[:, 1]       # instead of a dataframe (index with "lower y" and "upper y" keys)
         pre_model[:min_t] = np.nan
         pre_lower[:min_t] = np.nan
         pre_upper[:min_t] = np.nan
@@ -124,8 +127,8 @@ class CausalImpact:
             exog=self.data.loc[self.data_inter:, self._reg_cols()]
         )
         post_model = post_pred.predicted_mean
-        post_lower = post_pred.conf_int()['lower y'].values
-        post_upper = post_pred.conf_int()['upper y'].values
+        post_lower = post_pred.conf_int()[:, 0]
+        post_upper = post_pred.conf_int()[:, 1]
 
         plt.figure(figsize=(15, 12))
 
