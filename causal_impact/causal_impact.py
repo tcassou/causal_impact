@@ -192,6 +192,7 @@ class CausalImpact:
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
         ax3.set_xticklabels(self.data_index)
+        plt.locator_params(axis='x', nbins=min(12, self.data.shape[0]))
         plt.title('Cumulative Impact')
         plt.xlabel('$T$')
         plt.show()
