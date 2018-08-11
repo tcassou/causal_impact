@@ -139,15 +139,9 @@ class CausalImpact:
         plt.plot(self.data[self._obs_col()], 'k', linewidth=2, label=self._obs_col())
         plt.axvline(self.data_inter, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[:self.data_inter - 1].index,
-            pre_lower,
-            pre_upper,
-            facecolor='gray', interpolate=True, alpha=0.25,
-        )
-        plt.fill_between(
-            self.data.loc[self.data_inter:].index,
-            post_lower,
-            post_upper,
+            self.data.index,
+            np.concatenate([pre_lower, post_lower]),
+            np.concatenate([pre_upper, post_upper]),
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.setp(ax1.get_xticklabels(), visible=False)
@@ -160,15 +154,9 @@ class CausalImpact:
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.data_inter, c='k', linestyle='--')
         plt.fill_between(
-            self.data.loc[:self.data_inter - 1].index,
-            self.data.loc[:self.data_inter - 1, self._obs_col()] - pre_lower,
-            self.data.loc[:self.data_inter - 1, self._obs_col()] - pre_upper,
-            facecolor='gray', interpolate=True, alpha=0.25,
-        )
-        plt.fill_between(
-            self.data.loc[self.data_inter:].index,
-            self.data.loc[self.data_inter:, self._obs_col()] - post_lower,
-            self.data.loc[self.data_inter:, self._obs_col()] - post_upper,
+            self.data.index,
+            self.data[self._obs_col()] - np.concatenate([pre_lower, post_lower]),
+            self.data[self._obs_col()] - np.concatenate([pre_upper, post_upper]),
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.setp(ax2.get_xticklabels(), visible=False)
