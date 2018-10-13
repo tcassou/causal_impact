@@ -113,21 +113,35 @@ class CausalImpact:
         """
         min_t = 2 if self.model_args['n_seasons'] is None else self.model_args['n_seasons'] + 1
         # Data model before date of intervention - allows to evaluate quality of fit
-        pred = self.fit.get_prediction()
-        pre_model = pred.predicted_mean
-        pre_lower = pred.conf_int()[:, 0]       # As of 0.9.0, statsmodels returns a numpy array here
-        pre_upper = pred.conf_int()[:, 1]       # instead of a dataframe (index with "lower y" and "upper y" keys)
+        pre_pred = self.fit.get_prediction()
+        pre_model = pre_pred.predicted_mean
+        pre_conf_int = pre_pred.conf_int()
+        # As of 0.9.0, statsmodels returns a np.ndarray here instead of a dataframe with "lower y" and "upper y" columns
+        if isinstance(pre_conf_int, np.ndarray):
+            pre_lower = pre_conf_int[:, 0]
+            pre_upper = pre_conf_int[:, 1]
+        else:
+            pre_lower = pre_conf_int.loc[:, 'lower y'].values
+            pre_upper = pre_conf_int.loc[:, 'upper y'].values
+
         pre_model[:min_t] = np.nan
         pre_lower[:min_t] = np.nan
         pre_upper[:min_t] = np.nan
+
         # Best prediction of y without any intervention
         post_pred = self.fit.get_forecast(
             steps=self.data.shape[0] - self.data_inter,
             exog=self.data.loc[self.data_inter:, self._reg_cols()]
         )
         post_model = post_pred.predicted_mean
-        post_lower = post_pred.conf_int()[:, 0]
-        post_upper = post_pred.conf_int()[:, 1]
+        post_conf_int = post_pred.conf_int()
+        # As of 0.9.0, statsmodels returns a np.ndarray here instead of a dataframe with "lower y" and "upper y" columns
+        if isinstance(post_conf_int, np.ndarray):
+            post_lower = post_conf_int[:, 0]
+            post_upper = post_conf_int[:, 1]
+        else:
+            post_lower = post_conf_int.loc[:, 'lower y'].values
+            post_upper = post_conf_int.loc[:, 'upper y'].values
 
         plt.figure(figsize=(15, 12))
 
