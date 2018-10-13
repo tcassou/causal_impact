@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 
-version = '1.0.2'
+version = '1.0.3'
 
 setup(
     name='causal_impact',
@@ -24,6 +24,6 @@ setup(
         'numpy>=1.14.3',
         'scipy>=0.18.1',
         'matplotlib>=1.5.3',
-        'statsmodels==0.9.0',
+        'statsmodels>=0.9.0',
     ],
 )
