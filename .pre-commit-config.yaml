@@ -17,7 +17,7 @@
         - --rcfile=./.pylintrc
         - -rn
 -   repo: git://github.com/tcassou/python-pre-commit-hooks
-    sha: 4630aaacfd6c31fd15b86ad196f3f5eaa69e0a51
+    sha: 3383e2f83463370cf4651040fb697a636bb0374e
     hooks:
     -   id: do_not_commit
     -   id: remove_ipython_notebook_outputs

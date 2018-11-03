@@ -13,8 +13,7 @@
 # Ignore ipython notebook checkpoints
 .ipynb_checkpoints
 # Virtual env
-.env/
-.env3/
+.env*/
 dist/
 
 *~
