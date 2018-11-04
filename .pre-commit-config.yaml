@@ -8,9 +8,8 @@
     -   id: flake8
     -   id: check-added-large-files
     -   id: double-quote-string-fixer
-        'language_version:': 2.7.5
 -   repo: git://github.com/pre-commit/mirrors-pylint
-    sha: v1.6.4.post1
+    sha: v2.1.1
     hooks:
     -   id: pylint
         args:
