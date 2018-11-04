@@ -3,17 +3,14 @@ language: python
 sudo: false
 
 python:
-  - "2.7_with_system_site_packages"
+  - "3.6"
 
 install:
   - pip -qqq install --upgrade pip setuptools
-  - pip install --user pre-commit==1.12.0
+  - pip install pre-commit==1.12.0
   - pip -qqq install -r requirements.txt
 
-cache:
-  apt: false
-  directories:
-    - /home/travis/virtualenv/python2.7_with_system_site_packages/lib/python2.7
+cache: pip
 
 env:
   global:
