@@ -82,7 +82,7 @@ class CausalImpact:
                 model_args[key] = val
 
         if self.data_inter < model_args['n_seasons']:
-            raise ValueError('Training data contains samples than number of seasons in BSTS model.')
+            raise ValueError('Training data contains more samples than number of seasons in BSTS model.')
 
         self.model_args = model_args
 
@@ -185,10 +185,11 @@ class CausalImpact:
         )
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.data_inter, c='k', linestyle='--')
+        radius_cumsum = np.sqrt(((post_model - post_lower) ** 2).cumsum())
         plt.fill_between(
             self.data.loc[self.data_inter:].index,
-            (self.data.loc[self.data_inter:, self._obs_col()] - post_lower).cumsum(),
-            (self.data.loc[self.data_inter:, self._obs_col()] - post_upper).cumsum(),
+            (self.data.loc[self.data_inter:, self._obs_col()] - post_model).cumsum() - radius_cumsum,
+            (self.data.loc[self.data_inter:, self._obs_col()] - post_model).cumsum() + radius_cumsum,
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
