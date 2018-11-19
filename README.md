@@ -40,5 +40,11 @@ ci.plot()
 After fitting the model, and estimating what the `y` time series would have been without any intervention, this will typically produce the following plots:
 ![Impact Plot](https://github.com/tcassou/causal_impact/blob/master/examples/causal_impact.png)
 
+If you need access to the data behind the plots for further analysis, you can simply use the `ci.result` attribute (`pandas.DataFrame` object). Alternatively, you can also call
+```
+result = ci.run(return_df=True)
+```
+and skip the plotting step.
+
 ## Issues and improvements
 As mentioned above, this package is still being developed. Feel free to contribute through github by sending pull requests or reporting issues.
