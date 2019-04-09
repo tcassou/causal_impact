@@ -4,6 +4,7 @@ from __future__ import division
 from __future__ import print_function
 
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as gs
 import numpy as np
 from statsmodels.tsa.statespace.structural import UnobservedComponents
 
@@ -163,7 +164,7 @@ class CausalImpact:
         """
         return 'y'
 
-    def _reg_cols(self):
+    def _reg_cols(self, small_multiples = False):
         """Get names of columns used in the regression component of the model.
 
         :return: the column names
@@ -177,20 +178,38 @@ class CausalImpact:
         self._fit.plot_components(figsize=(15, 9), legend_loc='lower right')
         plt.show()
 
-    def plot(self):
+    def plot(self, small_multiples = False):
         """Produce final impact plots.
         Note: the first few observations are not shown due to approximate diffuse initialization.
         """
         min_t = 2 if self.model_args['n_seasons'] is None else self.model_args['n_seasons'] + 1
 
+        # If we are going to render small multiples for the first row, we want a thinner line
+        line_width = .5 if small_multiples else 2
+
         plt.figure(figsize=(15, 12))
+        
+        # The overall grid of three rows, one column
+        overall = gs.GridSpec(3,1)
 
         # Observation and regression components
-        ax1 = plt.subplot(3, 1, 1)
+        ax1 = plt.subplot(overall[0])
+
+        # We will optionally create small multiples - 1 row and n + 1 across (n = length of _reg_cols() plus y & prediction)
+        multiple_plot_count = len(self._reg_cols()) + 1
+        multiples = gs.GridSpecFromSubplotSpec(1, multiple_plot_count, subplot_spec=overall[0])
+        plot_counter = 0
         for col in self._reg_cols():
-            plt.plot(self.data[col], label=col)
-        plt.plot(self.result['pred'].iloc[min_t:], 'r--', linewidth=2, label='model')
-        plt.plot(self.data[self._obs_col()], 'k', linewidth=2, label=self._obs_col())
+            if(small_multiples):
+                small = plt.subplot(multiples[plot_counter])
+                plt.axvline(self.data_inter, c='k', linestyle='--')
+                plt.title(col)
+            plt.plot(self.data[col], label=col, linewidth = line_width)
+            plot_counter = plot_counter + 1
+        if(small_multiples):
+            plt.subplot(multiples[multiple_plot_count - 1])
+        plt.plot(self.result['pred'].iloc[min_t:], 'r--', linewidth=line_width, label='model')
+        plt.plot(self.data[self._obs_col()], 'k', linewidth=line_width, label=self._obs_col())
         plt.axvline(self.data_inter, c='k', linestyle='--')
         plt.fill_between(
             self.data.index[min_t:],
@@ -203,7 +222,7 @@ class CausalImpact:
         plt.title('Observation vs prediction')
 
         # Pointwise difference
-        ax2 = plt.subplot(312, sharex=ax1)
+        ax2 = plt.subplot(overall[1], sharex=ax1)
         plt.plot(self.result['pred_diff'].iloc[min_t:], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.data_inter, c='k', linestyle='--')
@@ -217,7 +236,7 @@ class CausalImpact:
         plt.title('Difference')
 
         # Cumulative impact
-        ax3 = plt.subplot(313, sharex=ax1)
+        ax3 = plt.subplot(overall[2], sharex=ax2)
         plt.plot(self.data.index, self.result['cum_impact'], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.data_inter, c='k', linestyle='--')

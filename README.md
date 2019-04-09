@@ -40,6 +40,12 @@ ci.plot()
 After fitting the model, and estimating what the `y` time series would have been without any intervention, this will typically produce the following plots:
 ![Impact Plot](https://github.com/tcassou/causal_impact/blob/master/examples/causal_impact.png)
 
+Alternatively, if you would like to render each time series in a separate chart as small multiples, this may be specified in the plot() function
+```
+ci.plot(small_multiples = True)
+![Small Multiples Plot](https://github.com/tcassou/causal_impact/blob/master/examples/small_multiples.png)```
+
+
 If you need access to the data behind the plots for further analysis, you can simply use the `ci.result` attribute (`pandas.DataFrame` object). Alternatively, you can also call
 ```
 result = ci.run(return_df=True)
