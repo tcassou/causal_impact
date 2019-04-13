@@ -194,6 +194,7 @@ class CausalImpact:
 
         # Observation and regression components
         ax1 = plt.subplot(overall[0])
+        main_x_axis_plot = None
 
         # We will optionally create small multiples - 1 row and n + 1 across (n = length of _reg_cols() plus y & prediction)
         multiple_plot_count = len(self._reg_cols()) + 1
@@ -201,13 +202,15 @@ class CausalImpact:
         plot_counter = 0
         for col in self._reg_cols():
             if(small_multiples):
-                small = plt.subplot(multiples[plot_counter])
+                small = plt.subplot(multiples[plot_counter], sharex=main_x_axis_plot)
+                if (main_x_axis_plot is None):
+                    main_x_axis_plot = small
                 plt.axvline(self.data_inter, c='k', linestyle='--')
                 plt.title(col)
             plt.plot(self.data[col], label=col, linewidth = line_width)
             plot_counter = plot_counter + 1
         if(small_multiples):
-            plt.subplot(multiples[multiple_plot_count - 1])
+            plt.subplot(multiples[multiple_plot_count - 1], sharex=main_x_axis_plot)
         plt.plot(self.result['pred'].iloc[min_t:], 'r--', linewidth=line_width, label='model')
         plt.plot(self.data[self._obs_col()], 'k', linewidth=line_width, label=self._obs_col())
         plt.axvline(self.data_inter, c='k', linestyle='--')
@@ -221,8 +224,11 @@ class CausalImpact:
         plt.legend(loc='upper left')
         plt.title('Observation vs prediction')
 
+        if (main_x_axis_plot is None):
+            main_x_axis_plot = ax1
+
         # Pointwise difference
-        ax2 = plt.subplot(overall[1], sharex=ax1)
+        ax2 = plt.subplot(overall[1], sharex=main_x_axis_plot)
         plt.plot(self.result['pred_diff'].iloc[min_t:], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.data_inter, c='k', linestyle='--')
@@ -236,7 +242,7 @@ class CausalImpact:
         plt.title('Difference')
 
         # Cumulative impact
-        ax3 = plt.subplot(overall[2], sharex=ax2)
+        ax3 = plt.subplot(overall[2], sharex=main_x_axis_plot)
         plt.plot(self.data.index, self.result['cum_impact'], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self.data_inter, c='k', linestyle='--')
