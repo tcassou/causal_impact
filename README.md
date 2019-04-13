@@ -44,7 +44,7 @@ Alternatively, if you would like to render each time series in a separate chart 
 ```
 ci.plot(small_multiples = True)
 ```
-![Small Multiples Plot](https://github.com/tcassou/causal_impact/blob/master/examples/small_multiples.png)
+![Small Multiples Plot](https://github.com/tcassou/causal_impact/blob/master/examples/small_mult.png)
 
 
 If you need access to the data behind the plots for further analysis, you can simply use the `ci.result` attribute (`pandas.DataFrame` object). Alternatively, you can also call
