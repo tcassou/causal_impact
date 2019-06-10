@@ -58,7 +58,7 @@ class CausalImpact:
         """Fit the BSTS model to the data.
 
         :param int max_iter: max number of iterations in UnobservedComponents.fit (maximum likelihood estimator)
-        :param bool return_df: set to `true` if you want this method to return the dataframe of model results
+        :param bool return_df: set to `True` if you want this method to return the dataframe of model results
 
         :return: None or pandas.DataFrame of results
         """
@@ -157,19 +157,29 @@ class CausalImpact:
         self._fit.plot_components(figsize=(15, 9), legend_loc='lower right')
         plt.show()
 
-    def plot(self):
+    def plot(self, split=False):
         """Produce final impact plots.
         Note: the first few observations are not shown due to approximate diffuse initialization.
+
+        :param bool split: set to `True` if you want to split plot of input data into multiple charts. Default: `False`.
         """
         min_t = 2 if self.n_seasons is None else self.n_seasons + 1
 
-        plt.figure(figsize=(15, 12))
-        grid = gs.GridSpec(3, 1)
+        n_plots = 3 + split * len(self._reg_cols())
+        grid = gs.GridSpec(n_plots, 1)
+        plt.figure(figsize=(15, 4 * n_plots))
 
         # Observation and regression components
         ax1 = plt.subplot(grid[0, :])
-        for col in self._reg_cols():
+        # Regression components
+        for i, col in enumerate(self._reg_cols()):
             plt.plot(self.data[col], label=col)
+            if split:  # Creating new subplot if charts should be split
+                plt.axvline(self._inter_index, c='k', linestyle='--')
+                plt.title(col)
+                ax = plt.subplot(grid[i + 1, :], sharex=ax1)
+                plt.setp(ax.get_xticklabels(), visible=False)
+        # Model and confidence intervals
         plt.plot(self.result['pred'].iloc[min_t:], 'r--', linewidth=2, label='model')
         plt.plot(self.data[self._obs_col()], 'k', linewidth=2, label=self._obs_col())
         plt.axvline(self._inter_index, c='k', linestyle='--')
@@ -184,7 +194,7 @@ class CausalImpact:
         plt.title('Observation vs prediction')
 
         # Pointwise difference
-        ax2 = plt.subplot(grid[1, :], sharex=ax1)
+        ax2 = plt.subplot(grid[-2, :], sharex=ax1)
         plt.plot(self.result['pred_diff'].iloc[min_t:], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self._inter_index, c='k', linestyle='--')
@@ -198,7 +208,7 @@ class CausalImpact:
         plt.title('Difference')
 
         # Cumulative impact
-        ax3 = plt.subplot(grid[2, :], sharex=ax1)
+        ax3 = plt.subplot(grid[-1, :], sharex=ax1)
         plt.plot(self.data.index, self.result['cum_impact'], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self._inter_index, c='k', linestyle='--')
