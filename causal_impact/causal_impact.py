@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import matplotlib.gridspec as gs
 import matplotlib.pyplot as plt
 import numpy as np
 from statsmodels.tsa.statespace.structural import UnobservedComponents
@@ -163,9 +164,10 @@ class CausalImpact:
         min_t = 2 if self.n_seasons is None else self.n_seasons + 1
 
         plt.figure(figsize=(15, 12))
+        grid = gs.GridSpec(3, 1)
 
         # Observation and regression components
-        ax1 = plt.subplot(3, 1, 1)
+        ax1 = plt.subplot(grid[0, :])
         for col in self._reg_cols():
             plt.plot(self.data[col], label=col)
         plt.plot(self.result['pred'].iloc[min_t:], 'r--', linewidth=2, label='model')
@@ -182,7 +184,7 @@ class CausalImpact:
         plt.title('Observation vs prediction')
 
         # Pointwise difference
-        ax2 = plt.subplot(312, sharex=ax1)
+        ax2 = plt.subplot(grid[1, :], sharex=ax1)
         plt.plot(self.result['pred_diff'].iloc[min_t:], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self._inter_index, c='k', linestyle='--')
@@ -196,7 +198,7 @@ class CausalImpact:
         plt.title('Difference')
 
         # Cumulative impact
-        ax3 = plt.subplot(313, sharex=ax1)
+        ax3 = plt.subplot(grid[2, :], sharex=ax1)
         plt.plot(self.data.index, self.result['cum_impact'], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
         plt.axvline(self._inter_index, c='k', linestyle='--')
