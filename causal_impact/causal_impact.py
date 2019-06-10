@@ -7,41 +7,34 @@ import matplotlib.pyplot as plt
 import numpy as np
 from statsmodels.tsa.statespace.structural import UnobservedComponents
 
-DEFAULT_ARGS = {
-    'max_iter': 1000,
-    'n_seasons': 7,
-}
-
 
 class CausalImpact:
     """
     Causal inference through counterfactual predictions using a Bayesian structural time-series model.
     """
 
-    def __init__(self, data, inter_date, model_args=None):
+    def __init__(self, data, inter_date, n_seasons=7):
         """Main constructor.
 
         :param pandas.DataFrame data: input data. Must contain at least 2 columns, one being named 'y'.
             See the README for more details.
         :param object inter_date: date of intervention. Must be of same type of the data index elements.
             This should usually be int of datetime.date
-        :param {str: object} model_args: parameters of the model
-            > max_iter: number of samples in the MCMC sampling
-            > n_seasons: number of seasons in the seasonal component of the BSTS model
+        :param int n_seasons: number of seasons in the seasonal component of the BSTS model
 
         """
         # Publicly exposed attributes
         self.data = None            # Input data, with a reset index
         self.data_index = None      # Data initial index
         self.data_inter = None      # Data intervention date, relative to the reset index
-        self.model_args = None      # BSTS model arguments
-        self.result = None          #
+        self.n_seasons = n_seasons  # Number of seasons in the seasonal component of the BSTS model
+        self.result = None          # DataFrame holding the results of the BSTS model predictions.
         # Private attributes for modeling purposes only
         self._model = None          # statsmodels BSTS model
         self._fit = None            # statsmodels BSTS fitted model
         # Checking input arguments
         self._check_input(data, inter_date)
-        self._check_model_args(data, model_args)
+        self._check_model_args()
 
     def _check_input(self, data, inter_date):
         """Check input data.
@@ -59,36 +52,27 @@ class CausalImpact:
             raise ValueError('Input intervention date could not be found in data index.')
         self.result = data.reset_index(drop=False)
 
-    def _check_model_args(self, data, model_args):
-        """Check input arguments, and add missing ones if needed.
-
-        :return: the valid dict of arguments
-        :rtype: {str: object}
+    def _check_model_args(self):
+        """Check if input arguments are compatible with the data.
         """
-        if model_args is None:
-            model_args = {}
-
-        for key, val in DEFAULT_ARGS.items():
-            if key not in model_args:
-                model_args[key] = val
-
-        if self.data_inter < model_args['n_seasons']:
+        if self.data_inter < self.n_seasons:
             raise ValueError('Training data contains more samples than number of seasons in BSTS model.')
 
-        self.model_args = model_args
-
-    def run(self, return_df=False):
+    def run(self, max_iter=1000, return_df=False):
         """Fit the BSTS model to the data.
+
+        :param int max_iter: max number of iterations in UnobservedComponents.fit (maximum likelihood estimator)
+        :param bool return_df: set to `true` if you want this method to return the dataframe of model results
+
+        :return: None or pandas.DataFrame of results
         """
         self._model = UnobservedComponents(
             self.data.loc[:self.data_inter - 1, self._obs_col()].values,
             exog=self.data.loc[:self.data_inter - 1, self._reg_cols()].values,
             level='local linear trend',
-            seasonal=self.model_args['n_seasons'],
+            seasonal=self.n_seasons,
         )
-        self._fit = self._model.fit(
-            maxiter=self.model_args['max_iter'],
-        )
+        self._fit = self._model.fit(maxiter=max_iter)
         self._get_estimates()
         self._get_difference_estimates()
         self._get_cumulative_estimates()
@@ -181,7 +165,7 @@ class CausalImpact:
         """Produce final impact plots.
         Note: the first few observations are not shown due to approximate diffuse initialization.
         """
-        min_t = 2 if self.model_args['n_seasons'] is None else self.model_args['n_seasons'] + 1
+        min_t = 2 if self.n_seasons is None else self.n_seasons + 1
 
         plt.figure(figsize=(15, 12))
 
