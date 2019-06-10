@@ -2,7 +2,7 @@
 from distutils.core import setup
 
 
-version = '1.1.0'
+version = '1.2.0'
 
 setup(
     name='causal_impact',
