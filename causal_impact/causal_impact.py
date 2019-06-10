@@ -23,39 +23,34 @@ class CausalImpact:
         :param int n_seasons: number of seasons in the seasonal component of the BSTS model
 
         """
-        # Publicly exposed attributes
-        self.data = None            # Input data, with a reset index
-        self.data_index = None      # Data initial index
-        self.data_inter = None      # Data intervention date, relative to the reset index
-        self.n_seasons = n_seasons  # Number of seasons in the seasonal component of the BSTS model
-        self.result = None          # DataFrame holding the results of the BSTS model predictions.
+        # Constructor arguments
+        self.data = data.reset_index(drop=True)     # Input data, with a reset index
+        self.inter_date = inter_date                # Date of intervention as passed in input
+        self.n_seasons = n_seasons                  # Number of seasons in the seasonal component of the BSTS model
+        # DataFrame holding the results of the BSTS model predictions.
+        self.result = None
         # Private attributes for modeling purposes only
-        self._model = None          # statsmodels BSTS model
-        self._fit = None            # statsmodels BSTS fitted model
+        self._input_index = data.index      # Input data index
+        self._inter_index = None            # Data intervention date, relative to the reset index
+        self._model = None                  # statsmodels BSTS model
+        self._fit = None                    # statsmodels BSTS fitted model
         # Checking input arguments
-        self._check_input(data, inter_date)
+        self._check_input()
         self._check_model_args()
 
-    def _check_input(self, data, inter_date):
+    def _check_input(self):
         """Check input data.
-
-        :param pandas.DataFrame data: input data. Must contain at least 2 columns, one being named 'y'.
-            See the README for more details.
-        :param object inter_date: date of intervention. Must be of same type of the data index elements.
-            This should usually be int of datetime.date
         """
-        self.data_index = data.index
-        self.data = data.reset_index(drop=True)
         try:
-            self.data_inter = self.data_index.tolist().index(inter_date)
+            self._inter_index = self._input_index.tolist().index(self.inter_date)
         except ValueError:
             raise ValueError('Input intervention date could not be found in data index.')
-        self.result = data.reset_index(drop=False)
+        self.result = self.data.copy()
 
     def _check_model_args(self):
         """Check if input arguments are compatible with the data.
         """
-        if self.data_inter < self.n_seasons:
+        if self._inter_index < self.n_seasons:
             raise ValueError('Training data contains more samples than number of seasons in BSTS model.')
 
     def run(self, max_iter=1000, return_df=False):
@@ -67,8 +62,8 @@ class CausalImpact:
         :return: None or pandas.DataFrame of results
         """
         self._model = UnobservedComponents(
-            self.data.loc[:self.data_inter - 1, self._obs_col()].values,
-            exog=self.data.loc[:self.data_inter - 1, self._reg_cols()].values,
+            self.data.loc[:self._inter_index - 1, self._obs_col()].values,
+            exog=self.data.loc[:self._inter_index - 1, self._reg_cols()].values,
             level='local linear trend',
             seasonal=self.n_seasons,
         )
@@ -85,8 +80,8 @@ class CausalImpact:
         """
         lpred = self._fit.get_prediction()   # Left: model before date of intervention (allows to evaluate fit quality)
         rpred = self._fit.get_forecast(      # Right: best prediction of y without any intervention
-            steps=self.data.shape[0] - self.data_inter,
-            exog=self.data.loc[self.data_inter:, self._reg_cols()]
+            steps=self.data.shape[0] - self._inter_index,
+            exog=self.data.loc[self._inter_index:, self._reg_cols()]
         )
         # Model prediction
         self.result = self.result.assign(pred=np.concatenate([lpred.predicted_mean, rpred.predicted_mean]))
@@ -125,19 +120,19 @@ class CausalImpact:
         """
         # Cumulative sum of modeled impact
         self.result = self.result.assign(cum_impact=0)
-        self.result.loc[self.data_inter:, 'cum_impact'] = (
+        self.result.loc[self._inter_index:, 'cum_impact'] = (
             self.data[self._obs_col()] - self.result['pred']
-        ).loc[self.data_inter:].cumsum()
+        ).loc[self._inter_index:].cumsum()
 
         # Confidence interval of the cumulative sum
         radius_cumsum = np.sqrt(
-            ((self.result['pred'] - self.result['pred_conf_int_lower']).loc[self.data_inter:] ** 2).cumsum()
+            ((self.result['pred'] - self.result['pred_conf_int_lower']).loc[self._inter_index:] ** 2).cumsum()
         )
         self.result = self.result.assign(cum_impact_conf_int_lower=0, cum_impact_conf_int_upper=0)
-        self.result.loc[self.data_inter:, 'cum_impact_conf_int_lower'] = \
-            self.result['cum_impact'].loc[self.data_inter:] - radius_cumsum
-        self.result.loc[self.data_inter:, 'cum_impact_conf_int_upper'] = \
-            self.result['cum_impact'].loc[self.data_inter:] + radius_cumsum
+        self.result.loc[self._inter_index:, 'cum_impact_conf_int_lower'] = \
+            self.result['cum_impact'].loc[self._inter_index:] - radius_cumsum
+        self.result.loc[self._inter_index:, 'cum_impact_conf_int_upper'] = \
+            self.result['cum_impact'].loc[self._inter_index:] + radius_cumsum
 
     def _obs_col(self):
         """Get name of column to be modeled in input data.
@@ -175,7 +170,7 @@ class CausalImpact:
             plt.plot(self.data[col], label=col)
         plt.plot(self.result['pred'].iloc[min_t:], 'r--', linewidth=2, label='model')
         plt.plot(self.data[self._obs_col()], 'k', linewidth=2, label=self._obs_col())
-        plt.axvline(self.data_inter, c='k', linestyle='--')
+        plt.axvline(self._inter_index, c='k', linestyle='--')
         plt.fill_between(
             self.data.index[min_t:],
             self.result['pred_conf_int_lower'].iloc[min_t:],
@@ -190,7 +185,7 @@ class CausalImpact:
         ax2 = plt.subplot(312, sharex=ax1)
         plt.plot(self.result['pred_diff'].iloc[min_t:], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
-        plt.axvline(self.data_inter, c='k', linestyle='--')
+        plt.axvline(self._inter_index, c='k', linestyle='--')
         plt.fill_between(
             self.data.index[min_t:],
             self.result['pred_diff_conf_int_lower'].iloc[min_t:],
@@ -204,7 +199,7 @@ class CausalImpact:
         ax3 = plt.subplot(313, sharex=ax1)
         plt.plot(self.data.index, self.result['cum_impact'], 'r--', linewidth=2)
         plt.plot(self.data.index, np.zeros(self.data.shape[0]), 'g-', linewidth=2)
-        plt.axvline(self.data_inter, c='k', linestyle='--')
+        plt.axvline(self._inter_index, c='k', linestyle='--')
         plt.fill_between(
             self.data.index,
             self.result['cum_impact_conf_int_lower'],
@@ -212,7 +207,7 @@ class CausalImpact:
             facecolor='gray', interpolate=True, alpha=0.25,
         )
         plt.axis([self.data.index[0], self.data.index[-1], None, None])
-        ax3.set_xticklabels(self.data_index, rotation=45)
+        ax3.set_xticklabels(self._input_index, rotation=45)
         plt.locator_params(axis='x', nbins=min(12, self.data.shape[0]))
         plt.title('Cumulative Impact')
         plt.xlabel('$T$')
