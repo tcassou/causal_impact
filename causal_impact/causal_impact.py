@@ -51,6 +51,8 @@ class CausalImpact:
     def _check_model_args(self):
         """Check if input arguments are compatible with the data.
         """
+        if self.n_seasons < 2:
+            raise ValueError('Seasonal component must have a seasonal period of at least 2.')
         if self._inter_index < self.n_seasons:
             raise ValueError('Training data contains more samples than number of seasons in BSTS model.')
 

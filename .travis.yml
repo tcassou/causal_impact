@@ -17,6 +17,7 @@ env:
     - PYTHON_ENV=test
   matrix:
     - COMMAND="pre-commit run --all-files"
+    - COMMAND="nosetests -v --rednose --nologcapture --nocapture tests"
 
 script: $COMMAND
 
