@@ -2,8 +2,6 @@
 
 [![Build Status](https://travis-ci.org/tcassou/causal_impact.svg?branch=master)](https://travis-ci.org/tcassou/causal_impact)
 
-**Work In Progress**
-
 Causal inference using Bayesian structural time-series models.
 This package aims at defining a python equivalent of the [R CausalImpact package by Google](https://github.com/google/CausalImpact).
 Please refer to [the package](https://github.com/google/CausalImpact) itself, [its documentation](http://google.github.io/CausalImpact/CausalImpact.html) or the [related publication](http://research.google.com/pubs/pub41854.html) (Brodersen et al., Annals of Applied Statistics, 2015) for more information.
@@ -32,8 +30,8 @@ At `t = date_inter = 280`, a marketing campaing (the *intervention*) is run for 
 ```
 from causal_impact.causal_impact import CausalImpact
 
-ci = CausalImpact(data, date_inter)
-ci.run()
+ci = CausalImpact(data, date_inter, n_seasons=7)
+ci.run(max_iter=1000)
 ci.plot()
 ```
 
@@ -47,4 +45,4 @@ result = ci.run(return_df=True)
 and skip the plotting step.
 
 ## Issues and improvements
-As mentioned above, this package is still being developed. Feel free to contribute through github by sending pull requests or reporting issues.
+This package is still being developed. Feel free to contribute through github by sending pull requests or reporting issues.
