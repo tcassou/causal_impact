@@ -1,6 +1,6 @@
 # Python Causal Impact
 
-[![Build Status](https://travis-ci.org/tcassou/causal_impact.svg?branch=master)](https://travis-ci.org/tcassou/causal_impact)
+[![Build](https://github.com/tcassou/causal_impact/workflows/Test%20and%20Release/badge.svg)](https://github.com/tcassou/causal_impact/actions)
 
 Causal inference using Bayesian structural time-series models.
 This package aims at defining a python equivalent of the [R CausalImpact package by Google](https://github.com/google/CausalImpact).
