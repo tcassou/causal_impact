@@ -28,7 +28,7 @@ The `y` time series in `data` is the one we will be modeling, while other column
 At `t = date_inter = 280`, a marketing campaing (the *intervention*) is run for market `y`. We want to understand the impact of that campaign on our measure.
 
 ```
-from causal_impact.causal_impact import CausalImpact
+from causal_impact import CausalImpact
 
 ci = CausalImpact(data, date_inter, n_seasons=7)
 ci.run(max_iter=1000)

@@ -16,7 +16,7 @@ from nose.tools import ok_
 from numpy.testing import assert_array_equal
 from numpy.testing import assert_raises
 
-from causal_impact.causal_impact import CausalImpact
+from causal_impact import CausalImpact
 
 
 @genty
