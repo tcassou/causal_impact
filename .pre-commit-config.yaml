@@ -1,27 +1,29 @@
 -   repo: git://github.com/pre-commit/pre-commit-hooks
-    sha: v0.7.1
+    rev: v3.1.0
     hooks:
     -   id: trailing-whitespace
     -   id: check-yaml
     -   id: end-of-file-fixer
     -   id: debug-statements
-    -   id: flake8
     -   id: check-added-large-files
     -   id: double-quote-string-fixer
+    -   id: check-case-conflict
+    -   id: check-docstring-first
+    -   id: name-tests-test
+    -   id: requirements-txt-fixer
 -   repo: git://github.com/pre-commit/mirrors-pylint
-    sha: v2.1.1
+    rev: v2.5.3
     hooks:
     -   id: pylint
         args:
         - --rcfile=./.pylintrc
         - -rn
 -   repo: git://github.com/tcassou/python-pre-commit-hooks
-    sha: 3383e2f83463370cf4651040fb697a636bb0374e
+    rev: 3383e2f83463370cf4651040fb697a636bb0374e
     hooks:
     -   id: do_not_commit
     -   id: remove_ipython_notebook_outputs
 -   repo: https://github.com/asottile/reorder_python_imports.git
-    sha: v0.3.1
+    rev: v2.3.4
     hooks:
     -   id: reorder-python-imports
-        language_version: python2.7

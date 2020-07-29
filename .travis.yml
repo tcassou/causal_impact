@@ -7,7 +7,8 @@ python:
 
 install:
   - pip -qqq install --upgrade pip setuptools
-  - pip install pre-commit==1.12.0
+  - pip install pre-commit==2.6.0
+  - pip install flake8
   - pip -qqq install -r requirements.txt
 
 cache: pip
@@ -17,6 +18,7 @@ env:
     - PYTHON_ENV=test
   matrix:
     - COMMAND="pre-commit run --all-files"
+    - COMMAND="flake8 ."
     - COMMAND="nosetests -v --rednose --nologcapture --nocapture tests"
 
 script: $COMMAND
